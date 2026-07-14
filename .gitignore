@@ -1,4 +1,9 @@
 __pycache__/
 *.pyc
+
+# Saidas geradas pelo programa (nao versionar)
 *_filtrada.pbm
 *_palavras.pbm
+
+# Rascunhos de teste pessoais
+teste.pbm

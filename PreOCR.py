@@ -37,10 +37,10 @@ from collections import deque
 # ===========================================================================
 # SECAO 1 - LEITURA/ESCRITA DE PBM E UTILIDADES        [PESSOA 1]
 # ===========================================================================
-
+ 
 def ler_pbm(caminho):
     """[PESSOA 1] Le um PBM ASCII (P1) e retorna (largura, altura, pixels).
-
+ 
     Passos:
       - abrir o arquivo (tratar erro de arquivo inexistente);
       - remover comentarios (tudo depois de '#' em cada linha);
@@ -49,27 +49,145 @@ def ler_pbm(caminho):
       - ler os bits seguintes (podem vir colados '0101' ou separados);
       - validar que ha largura*altura pixels (senao arquivo truncado);
       - montar 'pixels' como lista de bytearrays (0/1).
-
+ 
     Deve lancar ValueError com mensagem clara em qualquer caso invalido
     (formato != P1, cabecalho incompleto, dimensoes invalidas, truncado,
     valor de pixel diferente de 0/1).  -> criterio: tratamento de erros
     """
-    raise NotImplementedError("[PESSOA 1] implementar ler_pbm")
-
-
+    # Abrir o arquivo, e detectar erros de leitura
+    try:
+        with open(caminho, 'r', encoding='utf-8') as f:
+            linhas = f.readlines()
+    except FileNotFoundError:
+        raise ValueError(f"Arquivo não encontrado: '{caminho}'")
+    except IsADirectoryError:
+        raise ValueError(f"Caminho é um diretorio, e não um arquivo: '{caminho}'")
+    except UnicodeDecodeError as e:
+        raise ValueError(
+            f"Arquivo '{caminho}' não é um PBM ASCII valido "
+            f"(Erro de codificação): {e}"
+        )
+    except OSError as e:
+        raise ValueError(f"Não foi possivel abrir o arquivo '{caminho}': {e}")
+ 
+    # --- Remover comentários #
+    texto_sem_comentarios = []
+    for linha in linhas:
+        pos = linha.find('#')
+        if pos != -1:
+            linha = linha[:pos]
+        texto_sem_comentarios.append(linha)
+ 
+    # Separar em tokens
+    tokens = ' '.join(texto_sem_comentarios).split()
+ 
+    if len(tokens) < 1:
+        raise ValueError(f"Arquivo '{caminho}' está vazio ou só tem comentários")
+ 
+    # Validar numero mágico
+    magico = tokens[0]
+    if magico != 'P1':
+        raise ValueError(
+            f"formato invalido em '{caminho}': esperado 'P1', encontrado '{magico}'"
+        )
+ 
+    if len(tokens) < 3:
+        raise ValueError(
+            f"cabecalho PBM incompleto em '{caminho}': "
+            f"esperado 'P1 largura altura'"
+        )
+ 
+    # Ler e validar largura/altura
+    try:
+        largura = int(tokens[1])
+        altura = int(tokens[2])
+    except ValueError:
+        raise ValueError(
+            f"largura/altura invalidas no cabecalho de '{caminho}' "
+            f"(esperado numeros inteiros): '{tokens[1]}', '{tokens[2]}'"
+        )
+ 
+    if largura <= 0 or altura <= 0:
+        raise ValueError(
+            f"dimensoes invalidas em '{caminho}': "
+            f"largura={largura}, altura={altura} (devem ser > 0)"
+        )
+ 
+    #-- Ler os bits seguintes (podem vir colados ou separados) --
+    # Tokens[3:] pode ser algo como ['0','1','1',...] ou ['0101','1100',...]
+    # ou uma mistura das duas coisas; juntamos tudo numa unica string de
+    # digitos e depois consumimos exatamente largura*altura caracteres.
+    bits = ''.join(tokens[3:])
+ 
+    total_esperado = largura * altura
+    if len(bits) < total_esperado:
+        raise ValueError(
+            f"arquivo '{caminho}' truncado: esperado {total_esperado} "
+            f"pixels ({largura}x{altura}), encontrado {len(bits)}"
+        )
+ 
+    # Montar as listas de bitarrays com base nos 'pixels'
+    pixels = []
+    idx = 0
+    for y in range(altura):
+        linha_bits = bytearray(largura)
+        for x in range(largura):
+            c = bits[idx]
+            idx += 1
+            if c == '0':
+                linha_bits[x] = 0
+            elif c == '1':
+                linha_bits[x] = 1
+            else:
+                raise ValueError(
+                    f"Valor de pixel invalido '{c}' na posicão (x={x}, y={y}) "
+                    f"de '{caminho}': esperado 0 ou 1"
+                )
+        pixels.append(linha_bits)
+ 
+    return largura, altura, pixels
+ 
+ 
 def escrever_pbm(caminho, largura, altura, pixels, comentario=None):
     """[PESSOA 1] Escreve a imagem em PBM ASCII (P1).
-
+ 
     Formato: linha 'P1', comentario opcional '# ...', 'largura altura',
     e depois uma linha de '0'/'1' por linha da imagem.
     """
-    raise NotImplementedError("[PESSOA 1] implementar escrever_pbm")
-
-
+    if largura <= 0 or altura <= 0:
+        raise ValueError(
+            f"Dimensões invalidas para escrita: largura={largura}, altura={altura}"
+        )
+    if len(pixels) != altura:
+        raise ValueError(
+            f"Número de linhas de 'pixels' ({len(pixels)}) não bate com "
+            f"altura informada ({altura})"
+        )
+    for y, linha in enumerate(pixels):
+        if len(linha) != largura:
+            raise ValueError(
+                f"Linha {y} de 'pixels' tem {len(linha)} colunas, "
+                f"esperado largura={largura}"
+            )
+ 
+    try:
+        with open(caminho, 'w', encoding='ascii') as f:
+            f.write('P1\n')
+            if comentario:
+                for linha_comentario in str(comentario).splitlines():
+                    f.write(f'# {linha_comentario}\n')
+            f.write(f'{largura} {altura}\n')
+            for linha in pixels:
+                f.write(''.join('1' if v else '0' for v in linha))
+                f.write('\n')
+    except OSError as e:
+        raise ValueError(f"Não foi possivel escrever o arquivo '{caminho}': {e}")
+ 
+ 
 def copiar_imagem(pixels):
     """[PESSOA 1] Retorna uma copia independente de 'pixels'
     (lista de bytearrays novos, para nao alterar o original)."""
-    raise NotImplementedError("[PESSOA 1] implementar copiar_imagem")
+    return [bytearray(linha) for linha in pixels]
 
 
 # ===========================================================================
@@ -278,8 +396,20 @@ def main(argv):
       - chamar processar(caminho); capturar ValueError e imprimir 'Erro: ...'.
     Uso: python PreOCR.py <imagem.pbm>
     """
-    raise NotImplementedError("[PESSOA 1] implementar main")
+    if len(argv) != 2:
+        print("Uso: python PreOCR.py <imagem.pbm>")
+        return 1
 
+    caminho = argv[1]
+
+    try:
+        processar(caminho)
+    except ValueError as e:
+        print(f"Erro: {e}")
+        return 1
+    
+    return 0
+    
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
