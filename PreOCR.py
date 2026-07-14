@@ -208,7 +208,40 @@ def remover_ruido(largura, altura, pixels):
       - se e 0 e TODOS os 8 vizinhos sao 1 -> vira 1 (sal).
     Retorna uma imagem nova (nao alterar a de entrada).
     """
-    raise NotImplementedError("[PESSOA 2] implementar remover_ruido")
+    saida = copiar_imagem(pixels)
+    viz = ((-1, -1), (-1, 0), (-1, 1), (0, -1),
+           (0, 1), (1, -1), (1, 0), (1, 1))
+
+    for y in range(altura):
+        linha = pixels[y]
+        for x in range(largura):
+            if linha[x] == 1:
+                # hit-or-miss: objeto na origem (B1) e fundo em toda a
+                # vizinhanca-8 (B2) -> pixel preto isolado (pimenta).
+                # Remover = afinamento A - (A (*) B).
+                isolado = True
+                for dy, dx in viz:
+                    ny, nx = y + dy, x + dx
+                    if 0 <= ny < altura and 0 <= nx < largura \
+                            and pixels[ny][nx] == 1:
+                        isolado = False
+                        break
+                if isolado:
+                    saida[y][x] = 0
+            else:
+                # caso dual: fundo na origem cercado por objeto nos 8
+                # vizinhos -> buraco branco de 1 px (sal).
+                # Preencher = espessamento A U (A (*) B).
+                buraco = True
+                for dy, dx in viz:
+                    ny, nx = y + dy, x + dx
+                    if not (0 <= ny < altura and 0 <= nx < largura) \
+                            or pixels[ny][nx] == 0:
+                        buraco = False
+                        break
+                if buraco:
+                    saida[y][x] = 1
+    return saida
 
 
 def erosao_2x2(largura, altura, pixels):
@@ -218,19 +251,54 @@ def erosao_2x2(largura, altura, pixels):
     dos tracos das letras (>=2px), sumindo em aglomerados de ruido.
     -> Morfologia I slides 28-33 (erosao)
     """
-    raise NotImplementedError("[PESSOA 2] implementar erosao_2x2")
+    saida = [bytearray(largura) for _ in range(altura)]
+    for y in range(altura - 1):
+        l0, l1 = pixels[y], pixels[y + 1]
+        s = saida[y]
+        for x in range(largura - 1):
+            # A (-) B: o elemento 2x2 transladado precisa caber em A
+            if l0[x] and l0[x + 1] and l1[x] and l1[x + 1]:
+                s[x] = 1
+    return saida
 
 
 def reconstruir_por_marcador(largura, altura, pixels, marcador):
     """[PESSOA 2] Mantem apenas os componentes conexos de 'pixels' que
     contem algum ponto do 'marcador' (o resto e ruido e vira 0).
 
-    Dica: chamar componentes_conexos (Pessoa 3) para rotular; guardar num
-    conjunto os rotulos que tem marcador; reconstruir so esses.
-    E a reconstrucao morfologica (dilatacoes do marcador ∩ imagem), a mesma
-    ideia da extracao de componentes conexos.  -> Morfologia II slides 17-19
+    Reconstrucao morfologica: e a extracao de componentes conexos da aula,
+    X_k = (X_{k-1} (+) B) ∩ A, com B = vizinhanca-8, usando os pontos do
+    marcador como sementes (X_0 = marcador ∩ A) e expandindo ate
+    estabilizar (X_k == X_{k-1}).  -> Morfologia II slides 17-19
+    Implementada com fila (cada pixel entra uma unica vez), que e a forma
+    eficiente de iterar a formula. Independe da Secao 4 (Pessoa 3).
     """
-    raise NotImplementedError("[PESSOA 2] implementar reconstruir_por_marcador")
+    saida = [bytearray(largura) for _ in range(altura)]
+    fila = deque()
+
+    # X_0 = marcador ∩ A (sementes dentro do objeto)
+    for y in range(altura):
+        lm = marcador[y]
+        lp = pixels[y]
+        s = saida[y]
+        for x in range(largura):
+            if lm[x] and lp[x] and not s[x]:
+                s[x] = 1
+                fila.append((y, x))
+
+    viz = ((-1, -1), (-1, 0), (-1, 1), (0, -1),
+           (0, 1), (1, -1), (1, 0), (1, 1))
+
+    # X_k = (X_{k-1} (+) B) ∩ A, ate nao crescer mais
+    while fila:
+        y, x = fila.popleft()
+        for dy, dx in viz:
+            ny, nx = y + dy, x + dx
+            if 0 <= ny < altura and 0 <= nx < largura \
+                    and pixels[ny][nx] == 1 and saida[ny][nx] == 0:
+                saida[ny][nx] = 1
+                fila.append((ny, nx))
+    return saida
 
 
 def filtrar_ruido_completo(largura, altura, pixels):
@@ -240,7 +308,9 @@ def filtrar_ruido_completo(largura, altura, pixels):
       3) reconstruir_por_marcador (remove aglomerados de ruido)
     Retorna a imagem filtrada.
     """
-    raise NotImplementedError("[PESSOA 2] implementar filtrar_ruido_completo")
+    filtrada = remover_ruido(largura, altura, pixels)
+    marcador = erosao_2x2(largura, altura, filtrada)
+    return reconstruir_por_marcador(largura, altura, filtrada, marcador)
 
 
 # ===========================================================================
@@ -255,53 +325,113 @@ def filtrar_ruido_completo(largura, altura, pixels):
 
 def _dilatar_linha(linha, raio, n):
     """[PESSOA 2] Dilatacao 1D de uma linha (bytearray): posicao vira 1 se
-    existe algum 1 a distancia <= raio. Sugestao: duas varreduras medindo a
-    distancia ao 1 mais proximo (esquerda->direita e direita->esquerda)."""
-    raise NotImplementedError("[PESSOA 2] implementar _dilatar_linha")
+    existe algum 1 a distancia <= raio. Duas varreduras medindo a distancia
+    ao 1 mais proximo (esquerda->direita e direita->esquerda) -> O(n),
+    independente do raio. Equivale a A (+) B com B = reta 1x(2*raio+1)."""
+    INF = n + 1
+    dist = [INF] * n
+
+    # varredura esquerda -> direita
+    d = INF
+    for i in range(n):
+        d = 0 if linha[i] else (d + 1)
+        dist[i] = d
+
+    # varredura direita -> esquerda
+    d = INF
+    for i in range(n - 1, -1, -1):
+        d = 0 if linha[i] else (d + 1)
+        if d < dist[i]:
+            dist[i] = d
+
+    return bytearray(1 if dist[i] <= raio else 0 for i in range(n))
 
 
 def _erodir_linha(linha, raio, n):
-    """[PESSOA 2] Erosao 1D. Pela dualidade (slide 34): complementa a linha,
-    dilata e complementa de novo. Reaproveita _dilatar_linha."""
-    raise NotImplementedError("[PESSOA 2] implementar _erodir_linha")
+    """[PESSOA 2] Erosao 1D: posicao fica 1 apenas se TODAS as posicoes a
+    distancia <= raio sao 1 (A (-) B = { z | (B)z ⊆ A }, slide 28).
+
+    E o dual da dilatacao (slide 34): (A (-) B)^c = A^c (+) B^. Como A e um
+    subconjunto FINITO de Z, o complemento A^c inclui tudo fora da imagem;
+    por isso as bordas contam como fundo (distancia ao fundo comeca a valer
+    a partir das posicoes virtuais -1 e n). Duas varreduras O(n)."""
+    INF = n + 2
+    dist = [INF] * n
+
+    # esquerda -> direita (fundo virtual na posicao -1)
+    d = 0
+    for i in range(n):
+        d = 0 if linha[i] == 0 else (d + 1)
+        dist[i] = d
+
+    # direita -> esquerda (fundo virtual na posicao n)
+    d = 0
+    for i in range(n - 1, -1, -1):
+        d = 0 if linha[i] == 0 else (d + 1)
+        if d < dist[i]:
+            dist[i] = d
+
+    # sobrevive se o fundo mais proximo esta a mais de 'raio' de distancia
+    return bytearray(1 if dist[i] > raio else 0 for i in range(n))
 
 
 def _transpor(largura, altura, pixels):
     """[PESSOA 2] Transpoe a imagem (troca linhas por colunas). Usado para
     aplicar as operacoes 1D na vertical reaproveitando as horizontais."""
-    raise NotImplementedError("[PESSOA 2] implementar _transpor")
+    return [bytearray(pixels[y][x] for y in range(altura))
+            for x in range(largura)]
 
 
 def dilatacao_horizontal(largura, altura, pixels, raio):
     """[PESSOA 2] Dilata cada linha com _dilatar_linha."""
-    raise NotImplementedError("[PESSOA 2] implementar dilatacao_horizontal")
+    return [_dilatar_linha(pixels[y], raio, largura) for y in range(altura)]
 
 
 def erosao_horizontal(largura, altura, pixels, raio):
     """[PESSOA 2] Erode cada linha com _erodir_linha."""
-    raise NotImplementedError("[PESSOA 2] implementar erosao_horizontal")
+    return [_erodir_linha(pixels[y], raio, largura) for y in range(altura)]
 
 
 def dilatacao_vertical(largura, altura, pixels, raio):
     """[PESSOA 2] Dilatacao vertical: transpor, dilatar linhas, transpor."""
-    raise NotImplementedError("[PESSOA 2] implementar dilatacao_vertical")
+    t = _transpor(largura, altura, pixels)
+    t = [_dilatar_linha(t[x], raio, altura) for x in range(largura)]
+    return _transpor(altura, largura, t)
 
 
 def erosao_vertical(largura, altura, pixels, raio):
     """[PESSOA 2] Erosao vertical: transpor, erodir linhas, transpor."""
-    raise NotImplementedError("[PESSOA 2] implementar erosao_vertical")
+    t = _transpor(largura, altura, pixels)
+    t = [_erodir_linha(t[x], raio, altura) for x in range(largura)]
+    return _transpor(altura, largura, t)
+
+
+def _fechar_linha(linha, raio, n):
+    """[PESSOA 2] Fechamento 1D correto nas bordas. A dilatacao A (+) B vive
+    em Z (pode ultrapassar os limites da imagem); se recortassemos antes da
+    erosao, pixels legitimos da borda seriam apagados e a propriedade
+    A ⊆ A•B (Morf I, slide 48) deixaria de valer. Solucao: estender a linha
+    com 'raio' posicoes virtuais de fundo em cada lado, dilatar, erodir e
+    recortar de volta ao dominio original."""
+    m = n + 2 * raio
+    estendida = bytearray(raio) + linha + bytearray(raio)
+    dil = _dilatar_linha(estendida, raio, m)
+    ero = _erodir_linha(dil, raio, m)
+    return ero[raio:raio + n]
 
 
 def fechamento_horizontal(largura, altura, pixels, raio):
     """[PESSOA 2] A . B = (A (+) B) (-) B com B = reta horizontal.
     Junta letras vizinhas sem juntar palavras. -> Morf I slide 42"""
-    raise NotImplementedError("[PESSOA 2] implementar fechamento_horizontal")
+    return [_fechar_linha(pixels[y], raio, largura) for y in range(altura)]
 
 
 def fechamento_vertical(largura, altura, pixels, raio):
     """[PESSOA 2] A . B = (A (+) B) (-) B com B = reta vertical.
     Usado para colar o pingo do 'i'/'j' ao corpo da palavra."""
-    raise NotImplementedError("[PESSOA 2] implementar fechamento_vertical")
+    t = _transpor(largura, altura, pixels)
+    t = [_fechar_linha(t[x], raio, altura) for x in range(largura)]
+    return _transpor(altura, largura, t)
 
 
 # ===========================================================================
