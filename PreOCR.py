@@ -3,7 +3,12 @@
 PreOCR - Contagem de colunas, linhas e palavras em imagem PBM ASCII (P1).
 
 Disciplina: Processamento de Imagens T01 2026.1 - Profa. Beatriz Trinchao Andrade
-Grupo XX: (nomes dos integrantes)
+
+Grupo G13:
+    Evandro Jose dos Santos Neto
+    Gabriel Rodrigues dos Santos
+    Gustavo de Jesus Rodrigues
+    Joao Felipe Tunes Oliveira
 
 Uso: python3 PreOCR.py <imagem.pbm>
 
@@ -19,9 +24,7 @@ import os
 from collections import deque
 
 
-# ---------------------------------------------------------------------------
 # Leitura e escrita de PBM ASCII (P1)
-# ---------------------------------------------------------------------------
 
 def ler_pbm(caminho):
     """Le um PBM ASCII (P1) e retorna (largura, altura, pixels)."""
@@ -148,9 +151,7 @@ def copiar_imagem(pixels):
     return [bytearray(linha) for linha in pixels]
 
 
-# ---------------------------------------------------------------------------
 # Remocao de ruido sal e pimenta (hit-or-miss + reconstrucao)
-# ---------------------------------------------------------------------------
 
 def remover_ruido(largura, altura, pixels):
     """Remove pixels pretos isolados e preenche buracos brancos de 1 px."""
@@ -235,9 +236,7 @@ def filtrar_ruido_completo(largura, altura, pixels):
     return reconstruir_por_marcador(largura, altura, filtrada, marcador)
 
 
-# ---------------------------------------------------------------------------
 # Dilatacao, erosao e fechamento com elementos estruturantes em reta
-# ---------------------------------------------------------------------------
 
 def _dilatar_linha(linha, raio, n):
     """Dilatacao 1D: vira 1 se ha algum 1 a distancia <= raio (duas varreduras)."""
@@ -329,9 +328,7 @@ def fechamento_vertical(largura, altura, pixels, raio):
     return _transpor(altura, largura, t)
 
 
-# ---------------------------------------------------------------------------
 # Extracao de componentes conexos
-# ---------------------------------------------------------------------------
 
 def componentes_conexos(largura, altura, pixels):
     """Rotula componentes conexos (vizinhanca-8); retorna (caixas, rotulos)."""
@@ -368,9 +365,7 @@ def componentes_conexos(largura, altura, pixels):
     return componentes, rotulo
 
 
-# ---------------------------------------------------------------------------
 # Estimativa do tamanho da letra
-# ---------------------------------------------------------------------------
 
 def mediana(valores):
     """Mediana de uma lista de numeros."""
@@ -395,9 +390,7 @@ def estimar_altura_letra(componentes):
     return mediana(alturas)
 
 
-# ---------------------------------------------------------------------------
 # Caixas das palavras e desenho dos retangulos
-# ---------------------------------------------------------------------------
 
 def caixas_reais(largura, altura, pixels_filtrados, rotulo_merged, n_comp):
     """Caixa delimitadora de cada palavra usando so os pixels de texto."""
@@ -434,9 +427,7 @@ def desenhar_retangulo(pixels, largura, altura, caixa, margem=2):
         pixels[y][x2] = 1
 
 
-# ---------------------------------------------------------------------------
 # Programa principal
-# ---------------------------------------------------------------------------
 
 def processar(caminho_entrada, verboso=True,
               fator_palavra=0.22, fator_linha=1.0):

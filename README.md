@@ -34,8 +34,9 @@ Todas as funções foram implementadas pelo grupo.
 |---|---|
 | `PreOCR.py` | Programa completo |
 | `base_teste/` | Imagens de teste da disciplina (10 `.pbm`) e gabaritos (`.odt`) |
-| `imagens_grupo/` | As 3 imagens de teste de autoria do grupo |
-| `relatorio.md` | Relatório do trabalho |
+| `imagens_grupo/` | As 3 imagens de teste de autoria do grupo (G13) |
+| `extras/` | Imagens do recurso extra (fontes Times New Roman e Verdana) |
+| `relatorio/` | Relatório do trabalho (LaTeX) e figuras |
 
 ## Divisão do grupo
 
