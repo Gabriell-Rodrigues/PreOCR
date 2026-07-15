@@ -1,34 +1,34 @@
 \documentclass[12pt, a4paper]{article}
 
-% --- Codificação e Idioma ---
-\usepackage[utf8]{inputenc}    % Reconhece caracteres acentuados
-\usepackage[T1]{fontenc}       % Essencial para hifenização correta em PT-BR e cópia de texto
-\usepackage[portuguese]{babel} % Define o idioma do documento
 
-% --- Fonte (Padrão ABNT) ---
-\usepackage{mathptmx}          % Usa fonte equivalente à Times New Roman
+\usepackage[utf8]{inputenc}  
+\usepackage[T1]{fontenc}     
+\usepackage[portuguese]{babel}
 
-% --- Margens (Padrão ABNT) ---
+
+\usepackage{mathptmx}     
+
+
 \usepackage{geometry}
 \geometry{top=3cm, left=3cm, bottom=2cm, right=2cm}
 
-% --- Espaçamento (Padrão ABNT) ---
+
 \usepackage{setspace}
-\onehalfspacing                % Define espaçamento de 1,5 entre as linhas
+\onehalfspacing         
 
-% --- Parágrafos (Padrão ABNT) ---
-\usepackage{indentfirst}       % Indenta o primeiro parágrafo de cada seção
-\setlength{\parindent}{1.25cm} % Define o recuo do parágrafo para 1,25 cm
 
-% --- Imagens e Gráficos ---
+\usepackage{indentfirst}       
+\setlength{\parindent}{1.25cm} 
+
+
 \usepackage{graphicx}
 \usepackage{url}
 
-% --- Símbolos matemáticos ---
+
 \usepackage{amsmath, amssymb}
 
-% --- Links e Referências ---
-\usepackage[hidelinks]{hyperref} % Necessário para o \href funcionar e para links no sumário
+
+\usepackage[hidelinks]{hyperref} 
 
 \begin{document}
 
@@ -47,7 +47,7 @@
     \vspace{2cm}
 
     {\huge\bfseries PreOCR: Detecção de Colunas, Linhas e Palavras em Imagens Binárias\par}
-    \vspace{2.5cm}
+    \vspace{2cm}
 
     {\large\bfseries Discentes (Grupo 13):\par}
     \vspace{0.2cm}
@@ -150,15 +150,15 @@ As Figuras \ref{fig:ruido}, \ref{fig:filtrada} e \ref{fig:palavras} mostram um r
 \label{fig:palavras}
 \end{figure}
 
-\section{RECURSOS EXTRAS: OUTROS TIPOS DE FONTE}
-Como recurso extra, verificamos o comportamento do programa com textos escritos em fontes diferentes da Arial. Geramos imagens de teste nas fontes Times New Roman (serifada) e Verdana (sem serifa) e o programa retornou as contagens exatas nas duas, sem a alteração de nenhum parâmetro. Isso acontece porque todos os raios são relativos à altura mediana da letra, estimada da própria imagem, e porque a proporção entre o espaço de letras e o espaço de palavras se mantém nas fontes proporcionais. As imagens desses testes estão na pasta \texttt{extras} do projeto.
+\section{OUTROS TIPOS DE FONTE}
+Verificamos o comportamento do programa com textos escritos em fontes diferentes da Arial. Geramos imagens de teste nas fontes Times New Roman (serifada) e Verdana (sem serifa) e o programa retornou as contagens exatas nas duas, sem a alteração de nenhum parâmetro. Isso acontece porque todos os raios são relativos à altura mediana da letra, estimada da própria imagem, e porque a proporção entre o espaço de letras e o espaço de palavras se mantém nas fontes proporcionais. As imagens desses testes estão na pasta \texttt{extras} do projeto.
 
 Identificamos, porém, uma limitação com fontes monoespaçadas, como a Courier. Nelas, cada caractere ocupa uma célula de largura fixa, então o espaço entre letras se aproxima do espaço entre palavras e o fechamento com raio proporcional deixa de separar bem os dois casos. Uma extensão natural do trabalho seria estimar o limiar de fusão pela análise do histograma dos vãos horizontais de cada linha, em vez de usar uma proporção fixa da altura da letra.
 
 \section{TRATAMENTO DE ERROS}
 O programa rejeita, com mensagem clara no terminal: arquivo inexistente ou ilegível, formato diferente de P1, cabeçalho incompleto, dimensões inválidas, arquivo truncado e valores de pixel diferentes de 0 e 1. Uma imagem válida sem nenhum texto retorna 0 colunas, 0 linhas e 0 palavras, e as imagens de saída são geradas normalmente.
 
-\section{COMPILAÇÃO E EXECUÇÃO NO LINUX}
+\section{COMPILAÇÃO E EXECUÇÃO}
 O programa não requer compilação nem instalação de dependências, apenas o interpretador Python 3 (versão 3.6 ou superior), presente por padrão nas principais distribuições Linux. Para executar:
 
 \begin{verbatim}
@@ -188,7 +188,7 @@ GONZALEZ, R. C.; WOODS, R. E. \textbf{Processamento digital de imagens}. 3. ed. 
 PEDRINI, H.; SCHWARTZ, W. R. \textbf{Análise de imagens digitais: princípios, algoritmos e aplicações}. São Paulo: Thomson Learning, 2008.
 
 \bibitem{b3}
-POSKANZER, J. \textbf{PBM Format Specification}. Netpbm documentation. Disponível em: \url{https://netpbm.sourceforge.net/doc/pbm.html}. Acesso em: 15 jul. 2026.
+POSKANZER, J. \textbf{PBM Format Specification}. Netpbm documentation. Disponível em: \url{https://netpbm.sourceforge.net/doc/pbm.html}. Acesso em: 4 jul. 2026.
 
 \bibitem{b4}
 WONG, K. Y.; CASEY, R. G.; WAHL, F. M. Document Analysis System. \textbf{IBM Journal of Research and Development}, v. 26, n. 6, p. 647-656, 1982. DOI: \href{https://doi.org/10.1147/rd.266.0647}{10.1147/rd.266.0647}.
